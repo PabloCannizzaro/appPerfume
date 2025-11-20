@@ -131,7 +131,7 @@ const ProfileScreen: React.FC = () => {
     if (perfumeStatus === 'error' || prefError) {
       return (
         <View style={styles.center}>
-          <Text style={styles.errorText}>{perfError ?? perfumeError ?? 'Error al cargar datos'}</Text>
+          <Text style={styles.errorText}>{perfumeError ?? prefError ?? 'Error al cargar datos'}</Text>
           <TouchableOpacity style={styles.secondaryButton} onPress={refresh}>
             <Text style={styles.secondaryButtonText}>Reintentar</Text>
           </TouchableOpacity>
