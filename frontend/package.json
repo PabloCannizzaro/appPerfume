@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "app-perfume-frontend",
   "version": "0.0.1",
   "private": true,
@@ -26,7 +26,6 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~18.2.45",
-    "@types/react-native": "~0.74.0",
     "@types/react-dom": "~18.2.18",
     "typescript": "^5.3.3"
   }
