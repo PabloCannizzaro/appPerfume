@@ -26,6 +26,8 @@ export type Perfume = {
   averageIntensity?: 'suave' | 'media' | 'fuerte' | 'bestia';
   usageStats?: { day: number; night: number; summer: number; winter: number; office: number; date: number };
   backgroundTheme?: string;
+  primaryColorHex?: string;
+  secondaryColorHex?: string;
   buyLinks?: { label: string; url: string }[];
 };
 

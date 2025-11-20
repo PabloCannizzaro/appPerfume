@@ -220,7 +220,12 @@ const HomeScreen: React.FC = () => {
     );
   }
 
-  const bgTheme = getPerfumeBackground(currentPerfume.backgroundTheme, currentPerfume.tags ?? []);
+  const bgTheme = getPerfumeBackground(
+    currentPerfume.backgroundTheme,
+    currentPerfume.tags ?? [],
+    currentPerfume.primaryColorHex,
+    currentPerfume.secondaryColorHex,
+  );
 
   return (
     <LinearGradient style={styles.gradient} colors={bgTheme.colors} start={bgTheme.start} end={bgTheme.end}>

@@ -27,6 +27,7 @@ export interface Perfume {
   family: string;
   notes: PerfumeNotes;
   tags: string[];
+  summary?: string;
   averageRating: number;
   ratingCount?: number;
   averageLongevityHours: number;
@@ -34,6 +35,8 @@ export interface Perfume {
   usageStats: UsageStats;
   imageUrl?: string;
   backgroundTheme?: string;
+  primaryColorHex?: string;
+  secondaryColorHex?: string;
   buyLinks?: { label: string; url: string }[];
 }
 

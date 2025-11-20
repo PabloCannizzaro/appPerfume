@@ -134,7 +134,12 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
     );
   }
 
-  const bgTheme = getPerfumeBackground(perfume.backgroundTheme, perfume.tags ?? []);
+  const bgTheme = getPerfumeBackground(
+    perfume.backgroundTheme,
+    perfume.tags ?? [],
+    perfume.primaryColorHex,
+    perfume.secondaryColorHex,
+  );
 
   const openLink = (url: string) => {
     Linking.openURL(url);
@@ -148,121 +153,123 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
   const buyLinks = perfume.buyLinks ?? (perfume.externalLinks ?? []).map((url, i) => ({ label: `Ver en tienda ${i + 1}`, url }));
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <LinearGradient style={styles.hero} colors={bgTheme.colors} start={bgTheme.start} end={bgTheme.end}>
-        {perfume.imageUrl ? (
-          <Image source={{ uri: perfume.imageUrl }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={[styles.image, styles.imagePlaceholder]}>
-            <Text style={styles.placeholderText}>Sin imagen</Text>
+    <LinearGradient style={styles.gradient} colors={bgTheme.colors} start={bgTheme.start} end={bgTheme.end}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <View style={styles.hero}>
+          {perfume.imageUrl ? (
+            <Image source={{ uri: perfume.imageUrl }} style={styles.image} resizeMode="cover" />
+          ) : (
+            <View style={[styles.image, styles.imagePlaceholder]}>
+              <Text style={styles.placeholderText}>Sin imagen</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.header}>
+          <Text style={styles.title}>{perfume.name}</Text>
+          <Text style={styles.subtitle}>
+            {perfume.brand} {perfume.concentration ? `- ${perfume.concentration}` : ''}
+          </Text>
+          <Text style={styles.meta}>
+            {perfume.family} {perfume.launchYear || perfume.year ? `- ${perfume.launchYear ?? perfume.year}` : ''}
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notas</Text>
+          <View style={styles.notesRow}>
+            {notes.map((item) => (
+              <View key={item.label} style={styles.notesBlock}>
+                <Text style={styles.notesLabel}>{item.label}</Text>
+                <Text style={styles.notesText}>{Array.isArray(item.values) ? item.values.join(', ') : 'Sin datos'}</Text>
+              </View>
+            ))}
           </View>
-        )}
-      </LinearGradient>
+        </View>
 
-      <View style={styles.header}>
-        <Text style={styles.title}>{perfume.name}</Text>
-        <Text style={styles.subtitle}>
-          {perfume.brand} {perfume.concentration ? `- ${perfume.concentration}` : ''}
-        </Text>
-        <Text style={styles.meta}>
-          {perfume.family} {perfume.launchYear || perfume.year ? `- ${perfume.launchYear ?? perfume.year}` : ''}
-        </Text>
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Estadisticas de la comunidad</Text>
+          <View style={styles.statsCard}>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Rating promedio</Text>
+              <View style={styles.statValueRow}>
+                <RatingStars value={perfume.ratingAverage ?? perfume.averageRating ?? 0} />
+                <Text style={styles.statText}>({perfume.ratingCount ?? 0})</Text>
+              </View>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Duracion</Text>
+              <Text style={styles.statText}>
+                {perfume.longevity ?? (perfume.averageLongevityHours ? `${perfume.averageLongevityHours}h` : 'Sin dato')}
+              </Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Intensidad</Text>
+              <Text style={styles.statText}>{perfume.sillage ?? perfume.averageIntensity ?? 'Sin dato'}</Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Uso ideal</Text>
+              <UsageTags tags={perfume.usage ?? usageTags} />
+            </View>
+          </View>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notas</Text>
-        <View style={styles.notesRow}>
-          {notes.map((item) => (
-            <View key={item.label} style={styles.notesBlock}>
-              <Text style={styles.notesLabel}>{item.label}</Text>
-              <Text style={styles.notesText}>{Array.isArray(item.values) ? item.values.join(', ') : 'Sin datos'}</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tu opinion</Text>
+          <View style={styles.userCard}>
+            <Text style={styles.userLabel}>Calificar</Text>
+            <RatingStars value={userRating} editable onChange={setUserRating} size={22} />
+            <TextInput
+              style={styles.input}
+              placeholder="Escribe un comentario corto"
+              value={userComment}
+              onChangeText={setUserComment}
+              multiline
+            />
+            <View style={styles.actionsRow}>
+              {actionOptions.map((action) => {
+                const active = userActions[action.key];
+                return (
+                  <TouchableOpacity
+                    key={action.key}
+                    style={[styles.actionPill, active && styles.actionPillActive]}
+                    onPress={() => toggleAction(action.key)}
+                  >
+                    <Text style={[styles.actionPillText, active && styles.actionPillTextActive]}>{action.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleSubmitReview} disabled={savingReview}>
+              <Text style={styles.primaryButtonText}>{savingReview ? 'Guardando...' : 'Guardar'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Comentarios recientes</Text>
+          {reviews.map((review) => (
+            <View key={review.id} style={styles.reviewCard}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewName}>{review.userName ?? 'Usuario'}</Text>
+                <RatingStars value={review.rating} size={14} />
+              </View>
+              <Text style={styles.reviewDate}>{review.date ?? (review as any).createdAt}</Text>
+              <Text style={styles.reviewText}>{review.comment}</Text>
             </View>
           ))}
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Estadisticas de la comunidad</Text>
-        <View style={styles.statsCard}>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Rating promedio</Text>
-            <View style={styles.statValueRow}>
-              <RatingStars value={perfume.ratingAverage ?? perfume.averageRating ?? 0} />
-              <Text style={styles.statText}>({perfume.ratingCount ?? 0})</Text>
-            </View>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Duracion</Text>
-            <Text style={styles.statText}>
-              {perfume.longevity ?? (perfume.averageLongevityHours ? `${perfume.averageLongevityHours}h` : 'Sin dato')}
-            </Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Intensidad</Text>
-            <Text style={styles.statText}>{perfume.sillage ?? perfume.averageIntensity ?? 'Sin dato'}</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Uso ideal</Text>
-            <UsageTags tags={perfume.usage ?? usageTags} />
-          </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Donde se puede comprar</Text>
+          {buyLinks.map((link) => (
+            <TouchableOpacity key={link.url} style={styles.secondaryButton} onPress={() => openLink(link.url)}>
+              <Text style={styles.secondaryButtonText}>{link.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Tu opinion</Text>
-        <View style={styles.userCard}>
-          <Text style={styles.userLabel}>Calificar</Text>
-          <RatingStars value={userRating} editable onChange={setUserRating} size={22} />
-          <TextInput
-            style={styles.input}
-            placeholder="Escribe un comentario corto"
-            value={userComment}
-            onChangeText={setUserComment}
-            multiline
-          />
-          <View style={styles.actionsRow}>
-            {actionOptions.map((action) => {
-              const active = userActions[action.key];
-              return (
-                <TouchableOpacity
-                  key={action.key}
-                  style={[styles.actionPill, active && styles.actionPillActive]}
-                  onPress={() => toggleAction(action.key)}
-                >
-                  <Text style={[styles.actionPillText, active && styles.actionPillTextActive]}>{action.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleSubmitReview} disabled={savingReview}>
-            <Text style={styles.primaryButtonText}>{savingReview ? 'Guardando...' : 'Guardar'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Comentarios recientes</Text>
-        {reviews.map((review) => (
-          <View key={review.id} style={styles.reviewCard}>
-            <View style={styles.reviewHeader}>
-              <Text style={styles.reviewName}>{review.userName ?? 'Usuario'}</Text>
-              <RatingStars value={review.rating} size={14} />
-            </View>
-            <Text style={styles.reviewDate}>{review.date ?? (review as any).createdAt}</Text>
-            <Text style={styles.reviewText}>{review.comment}</Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Donde se puede comprar</Text>
-        {buyLinks.map((link) => (
-          <TouchableOpacity key={link.url} style={styles.secondaryButton} onPress={() => openLink(link.url)}>
-            <Text style={styles.secondaryButtonText}>{link.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 

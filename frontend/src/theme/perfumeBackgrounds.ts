@@ -13,7 +13,18 @@ const themes: Record<string, PerfumeBackground> = {
   'clean-blue': { colors: ['#e0f2fe', '#bae6fd', '#93c5fd'], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
 };
 
-export function getPerfumeBackground(theme?: string, tags: string[] = []): PerfumeBackground {
+export function getPerfumeBackground(
+  theme?: string,
+  tags: string[] = [],
+  primaryColorHex?: string,
+  secondaryColorHex?: string,
+): PerfumeBackground {
+  if (primaryColorHex || secondaryColorHex) {
+    const primary = primaryColorHex ?? '#111827';
+    const secondary = secondaryColorHex ?? '#e5e7eb';
+    return { colors: [primary, secondary], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } };
+  }
+
   if (theme && themes[theme]) return themes[theme];
 
   const lowerTags = tags.map((t) => t.toLowerCase());
