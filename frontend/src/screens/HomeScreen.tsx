@@ -236,3 +236,5 @@ const HomeScreen: React.FC = () => {
     </View>
   );
 };
+
+export default HomeScreen;
