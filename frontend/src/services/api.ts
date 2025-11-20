@@ -1,13 +1,13 @@
 // Thin fetch wrapper for the backend API.
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-type RequestOptions = {
-  params?: Record<string, string | number | undefined>;
-  headers?: Record<string, string>;
-};
+type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
-function buildUrl(path: string, params?: Record<string, string | number | undefined>) {
-  const url = new URL(path.startsWith('http') ? path : `${BASE_URL}/${path.replace(/^\\//, '')}`);
+function buildUrl(path: string, params?: QueryParams): string {
+  const isAbsolute = /^https?:\/\//i.test(path);
+  const cleanedPath = path.startsWith('/') ? path.slice(1) : path;
+  const url = new URL(isAbsolute ? path : `${BASE_URL}/${cleanedPath}`);
+
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -15,31 +15,38 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
       }
     });
   }
+
   return url.toString();
 }
 
-async function handleResponse<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const message = await res.text();
-    throw new Error(message || 'Error en la solicitud');
-  }
-  return res.json() as Promise<T>;
-}
-
-export async function get<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const url = buildUrl(path, options.params);
-  const res = await fetch(url, { headers: options.headers });
-  return handleResponse<T>(res);
-}
-
-export async function post<T>(path: string, body: unknown, options: RequestOptions = {}): Promise<T> {
+async function request<T>(
+  method: 'GET' | 'POST',
+  path: string,
+  options: { params?: QueryParams; body?: unknown } = {},
+): Promise<T> {
   const url = buildUrl(path, options.params);
   const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
-    body: JSON.stringify(body),
+    method,
+    headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
+    body: options.body ? JSON.stringify(options.body) : undefined,
   });
-  return handleResponse<T>(res);
+
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || `Error ${res.status}`);
+  }
+
+  return (await res.json()) as T;
 }
 
+export function apiGet<T>(path: string, params?: QueryParams): Promise<T> {
+  return request<T>('GET', path, { params });
+}
+
+export function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  return request<T>('POST', path, { body });
+}
+
+export const get = apiGet;
+export const post = apiPost;
 export { BASE_URL };
