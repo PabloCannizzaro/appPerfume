@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Perfume } from '../types/domain';
-import { get } from '../services/api';
+import { fetchPerfumes } from '../services/perfumeApi';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
@@ -14,7 +14,7 @@ export function usePerfumes(params?: { name?: string; brand?: string; tag?: stri
     let active = true;
     setStatus('loading');
     setError(null);
-    get<Perfume[]>('perfumes', { params })
+    fetchPerfumes(params)
       .then((data) => {
         if (!active) return;
         setPerfumes(data);

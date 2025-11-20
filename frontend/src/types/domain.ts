@@ -25,6 +25,7 @@ export type Perfume = {
   averageLongevityHours?: number;
   averageIntensity?: 'suave' | 'media' | 'fuerte' | 'bestia';
   usageStats?: { day: number; night: number; summer: number; winter: number; office: number; date: number };
+  backgroundTheme?: string;
   buyLinks?: { label: string; url: string }[];
 };
 

@@ -17,7 +17,9 @@ import { RootStackParamList } from '../navigation/types';
 import RatingStars from '../components/RatingStars';
 import UsageTags from '../components/UsageTags';
 import { Perfume, Review } from '../types/domain';
-import { get, post } from '../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import { getPerfumeBackground } from '../theme/perfumeBackgrounds';
+import { fetchPerfumeDetail, fetchPerfumeReviews, postPerfumeReview } from '../services/perfumeApi';
 import { usePreferenceActions } from '../hooks/usePreferenceActions';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PerfumeDetail'>;
@@ -58,8 +60,8 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
       setLoading(true);
       setError(null);
       const [detail, reviewList] = await Promise.all([
-        get<Perfume>(`perfumes/${perfumeId}`),
-        get<Review[]>(`perfumes/${perfumeId}/reviews`),
+        fetchPerfumeDetail(perfumeId),
+        fetchPerfumeReviews(perfumeId),
       ]);
       setPerfume(detail);
       setReviews(reviewList.map((r, idx) => ({ ...r, id: r.id ?? `rev-${idx}`, date: (r as any).createdAt })));
@@ -91,7 +93,7 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
     }
     setSavingReview(true);
     try {
-      await post(`perfumes/${perfumeId}/reviews`, { userId: USER_ID, rating: userRating, comment: userComment });
+      await postPerfumeReview(perfumeId, { userId: USER_ID, rating: userRating, comment: userComment });
       setUserComment('');
       await fetchData();
       Alert.alert('Listo', 'Tu review se envio.');
@@ -132,6 +134,8 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
     );
   }
 
+  const bgTheme = getPerfumeBackground(perfume.backgroundTheme, perfume.tags ?? []);
+
   const openLink = (url: string) => {
     Linking.openURL(url);
   };
@@ -145,13 +149,15 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {perfume.imageUrl ? (
-        <Image source={{ uri: perfume.imageUrl }} style={styles.image} resizeMode="cover" />
-      ) : (
-        <View style={[styles.image, styles.imagePlaceholder]}>
-          <Text style={styles.placeholderText}>Sin imagen</Text>
-        </View>
-      )}
+      <LinearGradient style={styles.hero} colors={bgTheme.colors} start={bgTheme.start} end={bgTheme.end}>
+        {perfume.imageUrl ? (
+          <Image source={{ uri: perfume.imageUrl }} style={styles.image} resizeMode="cover" />
+        ) : (
+          <View style={[styles.image, styles.imagePlaceholder]}>
+            <Text style={styles.placeholderText}>Sin imagen</Text>
+          </View>
+        )}
+      </LinearGradient>
 
       <View style={styles.header}>
         <Text style={styles.title}>{perfume.name}</Text>
@@ -272,6 +278,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 280,
     backgroundColor: '#e5e7eb',
+  },
+  hero: {
+    marginBottom: 12,
   },
   imagePlaceholder: {
     alignItems: 'center',

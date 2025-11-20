@@ -28,10 +28,12 @@ export interface Perfume {
   notes: PerfumeNotes;
   tags: string[];
   averageRating: number;
+  ratingCount?: number;
   averageLongevityHours: number;
   averageIntensity: IntensityLevel;
   usageStats: UsageStats;
   imageUrl?: string;
+  backgroundTheme?: string;
   buyLinks?: { label: string; url: string }[];
 }
 

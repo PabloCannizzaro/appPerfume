@@ -20,6 +20,7 @@ import { UserPerfumeLists, UserProfile, UserPreferenceSummary } from '../types/u
 import { usePerfumes } from '../hooks/usePerfumes';
 import { usePreferenceActions } from '../hooks/usePreferenceActions';
 import { mockUserProfile } from '../data/mockUser';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type ProfileNavProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Profile'>,
@@ -156,7 +157,7 @@ const ProfileScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+        <LinearGradient colors={['#a855f7', '#6366f1']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{profile.name.charAt(0).toUpperCase()}</Text>
           </View>
@@ -167,7 +168,7 @@ const ProfileScreen: React.FC = () => {
           <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
             <Text style={styles.editButtonText}>Editar perfil</Text>
           </TouchableOpacity>
-        </View>
+        </LinearGradient>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mis listas</Text>
@@ -244,11 +245,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
     padding: 12,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   avatar: {
     width: 56,
@@ -257,6 +255,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#d1fae5',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   avatarText: {
     fontSize: 22,
@@ -270,10 +270,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '700',
+    color: '#fff',
   },
   bio: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#e5e7eb',
   },
   editButton: {
     paddingVertical: 8,

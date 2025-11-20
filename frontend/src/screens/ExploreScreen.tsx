@@ -1,5 +1,5 @@
 // Explore screen fetching perfumes from API with search and filters.
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -23,7 +24,25 @@ type ExploreNavProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-const quickFilters = ['fresco', 'acuatico', 'citrico', 'dulce', 'amaderado', 'dia', 'noche', 'verano', 'invierno'];
+const quickFilters = [
+  'fresco',
+  'acuatico',
+  'citrico',
+  'tropical',
+  'ozonico',
+  'amaderado',
+  'especiado',
+  'gourmand',
+  'limpio',
+  'dia',
+  'noche',
+  'verano',
+  'invierno',
+  'oficina',
+  'cita',
+  'fiesta',
+  'casual',
+];
 const placeholderImage = 'https://via.placeholder.com/200x200.png?text=Perfume';
 const CARD_PADDING = 8;
 const NUM_COLUMNS = 2;
@@ -35,10 +54,15 @@ const ExploreScreen: React.FC = () => {
   const { perfumes, status, error } = usePerfumes();
   const [search, setSearch] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const fade = useState(new Animated.Value(0))[0];
 
   const toggleFilter = (tag: string) => {
     setSelectedFilters((prev) => (prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]));
   };
+
+  useEffect(() => {
+    Animated.timing(fade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+  }, [fade]);
 
   const filteredPerfumes = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -58,7 +82,7 @@ const ExploreScreen: React.FC = () => {
   }, [search, selectedFilters, perfumes]);
 
   const renderItem = ({ item }: { item: Perfume }) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('PerfumeDetail', { perfumeId: item.id })}>
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('PerfumeDetail', { perfumeId: item.id })} activeOpacity={0.9}>
       <Image source={{ uri: item.imageUrl || placeholderImage }} style={styles.cardImage} />
       <Text style={styles.cardTitle} numberOfLines={1}>
         {item.name}
@@ -67,6 +91,13 @@ const ExploreScreen: React.FC = () => {
         {item.brand}
       </Text>
       <Text style={styles.cardRating}>* {item.ratingAverage?.toFixed(1) ?? item.averageRating?.toFixed(1) ?? '4.0'}</Text>
+      <View style={styles.tagRow}>
+        {(item.tags ?? []).slice(0, 3).map((tag) => (
+          <View key={tag} style={styles.tagChip}>
+            <Text style={styles.tagChipText}>{tag}</Text>
+          </View>
+        ))}
+      </View>
     </TouchableOpacity>
   );
 
@@ -123,15 +154,17 @@ const ExploreScreen: React.FC = () => {
         />
       </View>
 
-      <FlatList
-        data={filteredPerfumes}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        numColumns={NUM_COLUMNS}
-        columnWrapperStyle={styles.columnWrapper}
-        contentContainerStyle={styles.gridContent}
-        showsVerticalScrollIndicator={false}
-      />
+      <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: fade.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
+        <FlatList
+          data={filteredPerfumes}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          numColumns={NUM_COLUMNS}
+          columnWrapperStyle={styles.columnWrapper}
+          contentContainerStyle={styles.gridContent}
+          showsVerticalScrollIndicator={false}
+        />
+      </Animated.View>
     </View>
   );
 };
@@ -230,6 +263,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#f59e0b',
     fontWeight: '700',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  tagChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#e5e7eb',
+  },
+  tagChipText: {
+    fontSize: 11,
+    color: '#111827',
   },
 });
 

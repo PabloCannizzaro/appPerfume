@@ -18,6 +18,8 @@ import { RootStackParamList, TabParamList } from '../navigation/types';
 import { Perfume } from '../types/domain';
 import { usePerfumes } from '../hooks/usePerfumes';
 import { usePreferenceActions } from '../hooks/usePreferenceActions';
+import { LinearGradient } from 'expo-linear-gradient';
+import { getPerfumeBackground } from '../theme/perfumeBackgrounds';
 
 type HomeNavProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Home'>,
@@ -71,6 +73,7 @@ const SwipeCard: React.FC<{
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeNavProp>();
   const position = useRef(new Animated.ValueXY()).current;
+  const entry = useRef(new Animated.Value(0)).current;
   const { perfumes, status, error } = usePerfumes();
   const { performAction } = usePreferenceActions(USER_ID);
 
@@ -82,7 +85,9 @@ const HomeScreen: React.FC = () => {
     if (currentIndex >= perfumes.length) {
       setCurrentIndex(0);
     }
-  }, [perfumes.length, currentIndex]);
+    entry.setValue(0);
+    Animated.timing(entry, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+  }, [perfumes.length, currentIndex, entry]);
 
   const currentPerfume = perfumes[currentIndex];
   const likeCount = useMemo(
@@ -99,8 +104,18 @@ const HomeScreen: React.FC = () => {
     outputRange: ['-10deg', '0deg', '10deg'],
   });
 
+  const entryScale = entry.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.95, 1],
+  });
+  const entryOpacity = entry.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.6, 1],
+  });
+
   const cardStyle = {
-    transform: [...position.getTranslateTransform(), { rotate }],
+    transform: [...position.getTranslateTransform(), { rotate }, { scale: entryScale }],
+    opacity: entryOpacity,
   };
 
   const pickNextIndex = (current: number, updatedSeen: string[], total: number) => {
@@ -205,42 +220,46 @@ const HomeScreen: React.FC = () => {
     );
   }
 
+  const bgTheme = getPerfumeBackground(currentPerfume.backgroundTheme, currentPerfume.tags ?? []);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.iconButton} onPress={handleOpenSettings} accessibilityLabel="Abrir ajustes">
-          <Text style={styles.iconText}>S</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.avatar} onPress={handleOpenProfile} accessibilityLabel="Abrir perfil">
-          <Text style={styles.avatarText}>P</Text>
-        </TouchableOpacity>
-      </View>
+    <LinearGradient style={styles.gradient} colors={bgTheme.colors} start={bgTheme.start} end={bgTheme.end}>
+      <View style={styles.container}>
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.iconButton} onPress={handleOpenSettings} accessibilityLabel="Abrir ajustes">
+            <Text style={styles.iconText}>S</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.avatar} onPress={handleOpenProfile} accessibilityLabel="Abrir perfil">
+            <Text style={styles.avatarText}>P</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.swipeZone}>
-        <Animated.View style={[styles.cardWrapper, cardStyle]} {...panResponder.panHandlers}>
-          <SwipeCard
-            perfume={currentPerfume}
-            backgroundColor={accentColors[currentIndex % accentColors.length]}
-            onPressDetails={handleShowDetails}
-          />
-        </Animated.View>
-      </View>
+        <View style={styles.swipeZone}>
+          <Animated.View style={[styles.cardWrapper, cardStyle]} {...panResponder.panHandlers}>
+            <SwipeCard
+              perfume={currentPerfume}
+              backgroundColor={accentColors[currentIndex % accentColors.length]}
+              onPressDetails={handleShowDetails}
+            />
+          </Animated.View>
+        </View>
 
-      <View style={styles.metaRow}>
-        <Text style={styles.metaText}>Vistos: {seenIds.length}</Text>
-        <Text style={styles.metaText}>Likes: {likeCount}</Text>
-        <Text style={styles.metaText}>Dislikes: {dislikeCount}</Text>
-      </View>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaText}>Vistos: {seenIds.length}</Text>
+          <Text style={styles.metaText}>Likes: {likeCount}</Text>
+          <Text style={styles.metaText}>Dislikes: {dislikeCount}</Text>
+        </View>
 
-      <View style={styles.actionsRow}>
-        <TouchableOpacity style={[styles.actionButton, styles.dislikeButton]} onPress={() => completeSwipe('dislike')}>
-          <Text style={styles.actionText}>No me gusta</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.likeButton]} onPress={() => completeSwipe('like')}>
-          <Text style={styles.actionText}>Me gusta</Text>
-        </TouchableOpacity>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={[styles.actionButton, styles.dislikeButton]} onPress={() => completeSwipe('dislike')}>
+            <Text style={styles.actionText}>No me gusta</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.likeButton]} onPress={() => completeSwipe('like')}>
+            <Text style={styles.actionText}>Me gusta</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -250,7 +269,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f8fafc',
+  },
+  gradient: {
+    flex: 1,
   },
   topBar: {
     flexDirection: 'row',
