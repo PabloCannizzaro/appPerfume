@@ -154,7 +154,7 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
 
   return (
     <LinearGradient style={styles.gradient} colors={bgTheme.colors} start={bgTheme.start} end={bgTheme.end}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         <View style={styles.hero}>
           {perfume.imageUrl ? (
             <Image source={{ uri: perfume.imageUrl }} style={styles.image} resizeMode="cover" />
@@ -274,12 +274,16 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'transparent',
   },
   contentContainer: {
     paddingBottom: 32,
+    paddingTop: 12,
   },
   image: {
     width: '100%',
