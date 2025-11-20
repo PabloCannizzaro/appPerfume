@@ -9,6 +9,7 @@ import {
   Animated,
   PanResponder,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -40,7 +41,13 @@ const SwipeCard: React.FC<{
 }> = ({ perfume, backgroundColor, onPressDetails }) => {
   return (
     <View style={styles.card}>
-      <View style={[styles.imagePlaceholder, { backgroundColor }]} />
+      {perfume.imageUrl ? (
+        <Image source={{ uri: perfume.imageUrl }} style={styles.cardImage} resizeMode="cover" />
+      ) : (
+        <View style={[styles.imagePlaceholder, { backgroundColor }]}>
+          <Text style={styles.placeholderText}>Sin imagen</Text>
+        </View>
+      )}
       <Text style={styles.title}>{perfume.name}</Text>
       <Text style={styles.subtitle}>{perfume.brand}</Text>
 
@@ -297,6 +304,20 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     height: 200,
     borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e5e7eb',
+  },
+  cardImage: {
+    height: 200,
+    borderRadius: 12,
+    width: '100%',
+    backgroundColor: '#e5e7eb',
+  },
+  placeholderText: {
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '600',
   },
   title: {
     fontSize: 22,

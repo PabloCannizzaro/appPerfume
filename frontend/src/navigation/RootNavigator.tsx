@@ -2,6 +2,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
 import ExploreScreen from '../screens/ExploreScreen';
 import AiScreen from '../screens/AiScreen';
@@ -14,7 +15,31 @@ const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const MainTabs = () => (
-  <Tab.Navigator screenOptions={{ headerShown: false }}>
+  <Tab.Navigator
+    screenOptions={({ route }) => ({
+      headerShown: false,
+      tabBarIcon: ({ color, size }) => {
+        let iconName: keyof typeof Ionicons.glyphMap;
+        switch (route.name) {
+          case 'Home':
+            iconName = 'home';
+            break;
+          case 'Explore':
+            iconName = 'search';
+            break;
+          case 'AI':
+            iconName = 'sparkles';
+            break;
+          case 'Profile':
+            iconName = 'person-circle';
+            break;
+          default:
+            iconName = 'ellipse';
+        }
+        return <Ionicons name={iconName} size={size} color={color} />;
+      },
+    })}
+  >
     <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio' }} />
     <Tab.Screen name="Explore" component={ExploreScreen} options={{ title: 'Explorar' }} />
     <Tab.Screen name="AI" component={AiScreen} options={{ title: 'IA' }} />

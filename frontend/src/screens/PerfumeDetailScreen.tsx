@@ -145,7 +145,13 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Image source={{ uri: perfume.imageUrl || placeholderImage }} style={styles.image} />
+      {perfume.imageUrl ? (
+        <Image source={{ uri: perfume.imageUrl }} style={styles.image} resizeMode="cover" />
+      ) : (
+        <View style={[styles.image, styles.imagePlaceholder]}>
+          <Text style={styles.placeholderText}>Sin imagen</Text>
+        </View>
+      )}
 
       <View style={styles.header}>
         <Text style={styles.title}>{perfume.name}</Text>
@@ -266,6 +272,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 280,
     backgroundColor: '#e5e7eb',
+  },
+  imagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    color: '#6b7280',
+    fontWeight: '600',
   },
   header: {
     padding: 16,

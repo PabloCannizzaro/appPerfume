@@ -12,7 +12,7 @@ export const mockPerfumes: Perfume[] = [
     tags: ['fresco', 'verano', 'citrico', 'dia'],
     summary: 'Perfume fresco para verano, intensidad media.',
     ratingAverage: 4.4,
-    imageUrl: '',
+    imageUrl: 'https://via.placeholder.com/300x400.png?text=Citrus+Bloom',
   },
   {
     id: 'p2',
@@ -23,7 +23,7 @@ export const mockPerfumes: Perfume[] = [
     tags: ['nocturno', 'intenso', 'invernal', 'noche', 'dulce'],
     summary: 'Oriental especiado con buena fijacion.',
     ratingAverage: 4.7,
-    imageUrl: '',
+    imageUrl: 'https://via.placeholder.com/300x400.png?text=Noir+Essence',
   },
   {
     id: 'p3',
@@ -34,7 +34,7 @@ export const mockPerfumes: Perfume[] = [
     tags: ['marino', 'limpio', 'diario', 'acuatico', 'dia'],
     summary: 'Acuatico limpio para uso diario.',
     ratingAverage: 4.1,
-    imageUrl: '',
+    imageUrl: 'https://via.placeholder.com/300x400.png?text=Ocean+Mist',
   },
   {
     id: 'p4',
@@ -45,7 +45,7 @@ export const mockPerfumes: Perfume[] = [
     tags: ['amaderado', 'otono', 'invierno', 'noche'],
     summary: 'Amaderado seco con toques verdes.',
     ratingAverage: 4.3,
-    imageUrl: '',
+    imageUrl: 'https://via.placeholder.com/300x400.png?text=Woodland+Trail',
   },
   {
     id: 'p5',
@@ -56,6 +56,6 @@ export const mockPerfumes: Perfume[] = [
     tags: ['dulce', 'nocturno', 'noche'],
     summary: 'Dulce cremoso ideal para salidas de noche.',
     ratingAverage: 4.6,
-    imageUrl: '',
+    imageUrl: 'https://via.placeholder.com/300x400.png?text=Velvet+Sky',
   },
 ];
