@@ -1,5 +1,6 @@
 // Thin fetch wrapper for the backend API.
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+const BASE_URL = "http://192.168.0.205:3001/api";
+console.log("BASE_URL ==> ", BASE_URL);
 
 type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
