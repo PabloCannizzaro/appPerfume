@@ -238,3 +238,148 @@ const HomeScreen: React.FC = () => {
 };
 
 export default HomeScreen;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#f8fafc',
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e5e7eb',
+  },
+  iconText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#d1fae5',
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  swipeZone: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardWrapper: {
+    width: '100%',
+  },
+  card: {
+    borderRadius: 16,
+    padding: 16,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    gap: 8,
+  },
+  imagePlaceholder: {
+    height: 200,
+    borderRadius: 12,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tag: {
+    backgroundColor: '#e0f2fe',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#0ea5e9',
+  },
+  summary: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  detailButton: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#111827',
+  },
+  detailButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 16,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  likeButton: {
+    backgroundColor: '#22c55e',
+  },
+  dislikeButton: {
+    backgroundColor: '#ef4444',
+  },
+  actionText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  heading: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#fff',
+    gap: 8,
+  },
+});
