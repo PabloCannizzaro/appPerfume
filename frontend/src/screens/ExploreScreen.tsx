@@ -1,4 +1,4 @@
-// Explore screen with search, quick filters, and grid.
+// Explore screen fetching perfumes from API with search and filters.
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -9,13 +9,14 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, TabParamList } from '../navigation/types';
 import { Perfume } from '../types/domain';
-import { mockPerfumes } from '../data/mockPerfumes';
+import { usePerfumes } from '../hooks/usePerfumes';
 
 type ExploreNavProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Explore'>,
@@ -31,6 +32,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - CARD_PADDING * (NUM_COLUMNS * 2 + 2)) / NUM_C
 
 const ExploreScreen: React.FC = () => {
   const navigation = useNavigation<ExploreNavProp>();
+  const { perfumes, status, error } = usePerfumes();
   const [search, setSearch] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
@@ -40,7 +42,7 @@ const ExploreScreen: React.FC = () => {
 
   const filteredPerfumes = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return mockPerfumes.filter((perfume) => {
+    return perfumes.filter((perfume) => {
       const matchesText =
         query.length === 0 ||
         perfume.name.toLowerCase().includes(query) ||
@@ -53,10 +55,7 @@ const ExploreScreen: React.FC = () => {
       const tags = perfume.tags ?? [];
       return selectedFilters.every((tag) => tags.includes(tag));
     });
-  }, [search, selectedFilters]);
-
-  // TODO: replace mockPerfumes with backend data fetch.
-  // useEffect(() => { fetchPerfumesFromApi(); }, []);
+  }, [search, selectedFilters, perfumes]);
 
   const renderItem = ({ item }: { item: Perfume }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('PerfumeDetail', { perfumeId: item.id })}>
@@ -67,9 +66,27 @@ const ExploreScreen: React.FC = () => {
       <Text style={styles.cardSubtitle} numberOfLines={1}>
         {item.brand}
       </Text>
-      <Text style={styles.cardRating}>* {item.ratingAverage?.toFixed(1) ?? '4.0'}</Text>
+      <Text style={styles.cardRating}>* {item.ratingAverage?.toFixed(1) ?? item.averageRating?.toFixed(1) ?? '4.0'}</Text>
     </TouchableOpacity>
   );
+
+  if (status === 'loading' || status === 'idle') {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#111827" />
+        <Text style={styles.heading}>Cargando perfumes...</Text>
+      </View>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.heading}>No se pudieron cargar perfumes</Text>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -124,6 +141,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
     paddingTop: 12,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  heading: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  errorText: {
+    color: '#ef4444',
   },
   searchBar: {
     paddingHorizontal: 16,

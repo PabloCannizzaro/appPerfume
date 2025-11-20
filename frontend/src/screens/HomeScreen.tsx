@@ -1,5 +1,5 @@
-// Swipe-first home screen for perfume discovery.
-import React, { useMemo, useRef, useState } from 'react';
+// Swipe-first home screen for perfume discovery backed by API data.
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,15 @@ import {
   Dimensions,
   Animated,
   PanResponder,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, TabParamList } from '../navigation/types';
 import { Perfume } from '../types/domain';
-import { mockPerfumes } from '../data/mockPerfumes';
+import { usePerfumes } from '../hooks/usePerfumes';
+import { usePreferenceActions } from '../hooks/usePreferenceActions';
 
 type HomeNavProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Home'>,
@@ -25,6 +27,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 const SWIPE_OUT_DISTANCE = SCREEN_WIDTH * 1.2;
 const REPEAT_EVERY = 4;
+const USER_ID = 'user-1'; // TODO: reemplazar con usuario autenticado
 
 const accentColors = ['#dbeafe', '#fef3c7', '#dcfce7'];
 
@@ -61,11 +64,20 @@ const SwipeCard: React.FC<{
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeNavProp>();
   const position = useRef(new Animated.ValueXY()).current;
+  const { perfumes, status, error } = usePerfumes();
+  const { performAction } = usePreferenceActions(USER_ID);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [seenIds, setSeenIds] = useState<string[]>([]);
   const [preferences, setPreferences] = useState<Record<string, Decision>>({});
 
-  const currentPerfume = mockPerfumes[currentIndex];
+  useEffect(() => {
+    if (currentIndex >= perfumes.length) {
+      setCurrentIndex(0);
+    }
+  }, [perfumes.length, currentIndex]);
+
+  const currentPerfume = perfumes[currentIndex];
   const likeCount = useMemo(
     () => Object.values(preferences).filter((value) => value === 'like').length,
     [preferences],
@@ -84,15 +96,15 @@ const HomeScreen: React.FC = () => {
     transform: [...position.getTranslateTransform(), { rotate }],
   };
 
-  const pickNextIndex = (current: number, updatedSeen: string[]) => {
-    if (mockPerfumes.length === 0) return current;
+  const pickNextIndex = (current: number, updatedSeen: string[], total: number) => {
+    if (total === 0) return current;
     if (updatedSeen.length > 0 && updatedSeen.length % REPEAT_EVERY === 0) {
       const previousIds = updatedSeen.slice(0, -1);
       const candidateId = previousIds[Math.floor(Math.random() * previousIds.length)];
-      const candidateIndex = mockPerfumes.findIndex((item) => item.id === candidateId);
+      const candidateIndex = perfumes.findIndex((item) => item.id === candidateId);
       if (candidateIndex >= 0) return candidateIndex;
     }
-    return (current + 1) % mockPerfumes.length;
+    return (current + 1) % total;
   };
 
   const resetPosition = () => {
@@ -102,7 +114,7 @@ const HomeScreen: React.FC = () => {
     }).start();
   };
 
-  const completeSwipe = (decision: Decision) => {
+  const completeSwipe = async (decision: Decision) => {
     if (!currentPerfume) return;
 
     setPreferences((prev) => ({
@@ -110,12 +122,15 @@ const HomeScreen: React.FC = () => {
       [currentPerfume.id]: decision,
     }));
 
-    // TODO: Call backend API to persist preference
-    // await api.savePreference({ perfumeId: currentPerfume.id, decision });
+    try {
+      await performAction(currentPerfume.id, decision);
+    } catch {
+      // ignore, state already updated; TODO surface error toast
+    }
 
     const updatedSeen = [...seenIds, currentPerfume.id];
     setSeenIds(updatedSeen);
-    const nextIndex = pickNextIndex(currentIndex, updatedSeen);
+    const nextIndex = pickNextIndex(currentIndex, updatedSeen, perfumes.length);
     setCurrentIndex(nextIndex);
     position.setValue({ x: 0, y: 0 });
   };
@@ -156,6 +171,24 @@ const HomeScreen: React.FC = () => {
       navigation.navigate('PerfumeDetail', { perfumeId: currentPerfume.id });
     }
   };
+
+  if (status === 'loading' || status === 'idle') {
+    return (
+      <View style={styles.emptyContainer}>
+        <ActivityIndicator size="large" color="#111827" />
+        <Text style={styles.heading}>Cargando perfumes...</Text>
+      </View>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.heading}>No se pudieron cargar perfumes</Text>
+        <Text style={styles.metaText}>{error}</Text>
+      </View>
+    );
+  }
 
   if (!currentPerfume) {
     return (
@@ -203,149 +236,3 @@ const HomeScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#f8fafc',
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#e5e7eb',
-  },
-  iconText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#d1fae5',
-  },
-  avatarText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  swipeZone: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardWrapper: {
-    width: '100%',
-  },
-  card: {
-    borderRadius: 16,
-    padding: 16,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-    gap: 8,
-  },
-  imagePlaceholder: {
-    height: 200,
-    borderRadius: 12,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tag: {
-    backgroundColor: '#e0f2fe',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  tagText: {
-    fontSize: 12,
-    color: '#0ea5e9',
-  },
-  summary: {
-    fontSize: 14,
-    color: '#374151',
-  },
-  detailButton: {
-    marginTop: 4,
-    alignSelf: 'flex-start',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: '#111827',
-  },
-  detailButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 16,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
-  metaText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  likeButton: {
-    backgroundColor: '#22c55e',
-  },
-  dislikeButton: {
-    backgroundColor: '#ef4444',
-  },
-  actionText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  heading: {
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#fff',
-  },
-});
-
-export default HomeScreen;

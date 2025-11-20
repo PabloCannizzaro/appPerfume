@@ -13,10 +13,10 @@ export type AIChatResponse = {
 
 export type AITestAnswers = {
   timeOfDay?: 'dia' | 'noche' | 'ambos';
-  season?: 'verano' | 'invierno' | 'primavera' | 'otono' | 'todo-ano';
-  scentStyle?: 'fresco' | 'citrico' | 'dulce' | 'amaderado' | 'acuatico';
+  season?: 'verano' | 'invierno' | 'primavera' | 'otono' | 'todo_el_ano';
+  style?: string[];
   intensity?: 'suave' | 'media' | 'fuerte';
-  usage?: 'oficina' | 'cita' | 'diario' | 'fiesta';
+  useCase?: 'oficina' | 'cita' | 'diario' | 'fiesta';
 };
 
 export type AITestRequest = {

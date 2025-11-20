@@ -1,4 +1,4 @@
-// AI hub: chat and guided test using backend contracts (mocked for now).
+// AI hub: chat and guided test using backend contracts.
 import React, { useMemo, useRef, useState } from 'react';
 import {
   View,
@@ -32,7 +32,7 @@ type ChatMessage = {
   recommendations?: Perfume[];
 };
 
-const testQuestions: { key: keyof AITestAnswers; question: string; options: { value: AITestAnswers[keyof AITestAnswers]; label: string }[] }[] = [
+const testQuestions: { key: keyof AITestAnswers; question: string; options: { value: any; label: string }[] }[] = [
   {
     key: 'timeOfDay',
     question: 'Momento de uso',
@@ -50,11 +50,11 @@ const testQuestions: { key: keyof AITestAnswers; question: string; options: { va
       { value: 'invierno', label: 'Invierno' },
       { value: 'primavera', label: 'Primavera' },
       { value: 'otono', label: 'Otono' },
-      { value: 'todo-ano', label: 'Todo el ano' },
+      { value: 'todo_el_ano', label: 'Todo el ano' },
     ],
   },
   {
-    key: 'scentStyle',
+    key: 'style',
     question: 'Estilo de aroma',
     options: [
       { value: 'fresco', label: 'Fresco' },
@@ -74,7 +74,7 @@ const testQuestions: { key: keyof AITestAnswers; question: string; options: { va
     ],
   },
   {
-    key: 'usage',
+    key: 'useCase',
     question: 'Uso principal',
     options: [
       { value: 'oficina', label: 'Oficina' },
@@ -97,11 +97,13 @@ const AiScreen: React.FC = () => {
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
 
   const [answers, setAnswers] = useState<AITestAnswers>({});
   const [testIndex, setTestIndex] = useState(0);
   const [testResult, setTestResult] = useState<AITestResponse | null>(null);
   const [testLoading, setTestLoading] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
 
   const chatListRef = useRef<FlatList<ChatMessage>>(null);
 
@@ -113,9 +115,16 @@ const AiScreen: React.FC = () => {
     setMessages((prev) => [...prev, newMessage]);
     setChatInput('');
     setChatLoading(true);
+    setChatError(null);
     try {
       const response = await sendChatMessage({ userId: 'user-1', message: newMessage.text });
       appendAiMessage(response);
+      if (response.recommendations.length === 0) {
+        setChatError('No se pudo generar una recomendacion clara. Intenta con mas detalle.');
+      }
+    } catch (err: any) {
+      setChatError(err.message || 'No se pudo contactar con el servidor');
+      appendAiMessage({ replyText: 'No se pudo contactar con el servidor, intenta de nuevo.', recommendations: [] });
     } finally {
       setChatLoading(false);
     }
@@ -132,7 +141,11 @@ const AiScreen: React.FC = () => {
     setTimeout(() => chatListRef.current?.scrollToEnd({ animated: true }), 50);
   };
 
-  const selectAnswer = (key: keyof AITestAnswers, value: AITestAnswers[keyof AITestAnswers]) => {
+  const selectAnswer = (key: keyof AITestAnswers, value: any) => {
+    if (key === 'style') {
+      setAnswers((prev) => ({ ...prev, style: [value] }));
+      return;
+    }
     setAnswers((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -142,9 +155,15 @@ const AiScreen: React.FC = () => {
       return;
     }
     setTestLoading(true);
+    setTestError(null);
     try {
       const result = await sendTestAnswers({ userId: 'user-1', answers });
       setTestResult(result);
+      if (result.recommendations.length === 0) {
+        setTestError('No se pudieron generar recomendaciones. Intenta con otras respuestas.');
+      }
+    } catch (err: any) {
+      setTestError(err.message || 'No se pudo contactar con el servidor');
     } finally {
       setTestLoading(false);
     }
@@ -211,6 +230,7 @@ const AiScreen: React.FC = () => {
             <Text style={styles.sendButtonText}>{chatLoading ? '...' : 'Enviar'}</Text>
           </TouchableOpacity>
         </View>
+        {chatError ? <Text style={styles.errorText}>{chatError}</Text> : null}
       </View>
     </KeyboardAvoidingView>
   );
@@ -221,6 +241,7 @@ const AiScreen: React.FC = () => {
         <ScrollView contentContainerStyle={{ padding: 12, gap: 12 }}>
           <Text style={styles.sectionTitle}>Resumen</Text>
           <Text style={styles.summaryText}>{testResult.summaryText}</Text>
+          {testError ? <Text style={styles.errorText}>{testError}</Text> : null}
           <Text style={styles.sectionTitle}>Recomendaciones</Text>
           <View style={{ gap: 10 }}>
             {testResult.recommendations.map((perfume) => (
@@ -238,6 +259,7 @@ const AiScreen: React.FC = () => {
         </ScrollView>
       ) : (
         <View style={styles.testContainer}>
+          {testError ? <Text style={styles.errorText}>{testError}</Text> : null}
           <Text style={styles.questionTitle}>{currentQuestion.question}</Text>
           <View style={styles.optionsGrid}>
             {currentQuestion.options.map((opt) => {
@@ -437,6 +459,11 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontWeight: '700',
     color: '#111827',
+  },
+  errorText: {
+    color: '#ef4444',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
   },
 });
 

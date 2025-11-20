@@ -1,3 +1,4 @@
+// DEPRECATED: solo para uso offline; la app usa la API real cuando esta disponible.
 import { Perfume, Review } from '../types/domain';
 
 export type PerfumeDetail = Perfume & {

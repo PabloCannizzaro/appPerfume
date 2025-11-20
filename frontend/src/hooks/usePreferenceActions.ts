@@ -1,28 +1,52 @@
-﻿// Minimal preference manager for local experiments; swap to global state later.
-import { useCallback, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { get, post } from '../services/api';
 import { PreferenceLabel, UserPreference } from '../types/domain';
+import { UserPerfumeLists } from '../types/user';
+
+// Maps frontend labels to backend actions
+const actionMap: Record<PreferenceLabel, 'like' | 'dislike' | 'favorite' | 'wantToTry' | 'haveIt'> = {
+  like: 'like',
+  dislike: 'dislike',
+  favorite: 'favorite',
+  wishlist: 'wantToTry',
+  owned: 'haveIt',
+  to_test: 'wantToTry',
+};
 
 export function usePreferenceActions(userId: string) {
-  const [preferences, setPreferences] = useState<UserPreference[]>([]);
+  const [preferences, setPreferences] = useState<UserPerfumeLists | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const togglePreference = useCallback(
-    (perfumeId: string, label: PreferenceLabel) => {
-      setPreferences((prev) => {
-        const exists = prev.find((pref) => pref.perfumeId === perfumeId && pref.label === label);
-        if (exists) {
-          return prev.filter((pref) => !(pref.perfumeId === perfumeId && pref.label === label));
-        }
-        const next: UserPreference = {
-          userId,
-          perfumeId,
-          label,
-          createdAt: new Date().toISOString(),
-        };
-        return [...prev, next];
-      });
+  const fetchPreferences = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    get<UserPerfumeLists>(`users/${userId}/preferences`)
+      .then((data) => setPreferences(data))
+      .catch((err) => setError(err.message || 'No se pudieron cargar las preferencias'))
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  useEffect(() => {
+    fetchPreferences();
+  }, [fetchPreferences]);
+
+  const performAction = useCallback(
+    async (perfumeId: string, label: PreferenceLabel) => {
+      const action = actionMap[label];
+      if (!action) return;
+      try {
+        setLoading(true);
+        const updated = await post<UserPerfumeLists>(`users/${userId}/preferences`, { perfumeId, action });
+        setPreferences(updated);
+      } catch (err: any) {
+        setError(err.message || 'No se pudo actualizar la preferencia');
+      } finally {
+        setLoading(false);
+      }
     },
     [userId],
   );
 
-  return { preferences, togglePreference };
+  return { preferences, loading, error, performAction, refresh: fetchPreferences };
 }

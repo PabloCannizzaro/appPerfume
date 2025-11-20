@@ -1,16 +1,29 @@
-// Detailed view for a perfume with stats, notes, and actions.
+// Detailed view for a perfume using backend data and preference/review actions.
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Alert, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  Linking,
+  ActivityIndicator,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { getPerfumeDetail, getPerfumeReviews, PerfumeDetail } from '../services/perfumeDetails';
 import RatingStars from '../components/RatingStars';
 import UsageTags from '../components/UsageTags';
-import { Review } from '../types/domain';
+import { Perfume, Review } from '../types/domain';
+import { get, post } from '../services/api';
+import { usePreferenceActions } from '../hooks/usePreferenceActions';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PerfumeDetail'>;
 
 const placeholderImage = 'https://via.placeholder.com/800x600.png?text=Perfume';
+const USER_ID = 'user-1'; // TODO: reemplazar con usuario autenticado real
 
 const actionOptions = [
   { key: 'like', label: 'Me gusta' },
@@ -24,7 +37,8 @@ type ActionKey = (typeof actionOptions)[number]['key'];
 
 const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
   const { perfumeId } = route.params;
-  const [perfume, setPerfume] = useState<PerfumeDetail | undefined>();
+  const { performAction } = usePreferenceActions(USER_ID);
+  const [perfume, setPerfume] = useState<Perfume | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [userRating, setUserRating] = useState<number>(0);
   const [userComment, setUserComment] = useState<string>('');
@@ -35,48 +49,99 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
     wishlist: false,
     owned: false,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [savingReview, setSavingReview] = useState(false);
 
-  useEffect(() => {
-    const detail = getPerfumeDetail(perfumeId);
-    setPerfume(detail);
-    setReviews(getPerfumeReviews(perfumeId));
-    setUserRating(detail?.ratingAverage ?? 0);
-  }, [perfumeId]);
-
-  const toggleAction = (key: ActionKey) => {
-    setUserActions((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      // TODO: Call backend API to persist user preference action
-      return next;
-    });
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [detail, reviewList] = await Promise.all([
+        get<Perfume>(`perfumes/${perfumeId}`),
+        get<Review[]>(`perfumes/${perfumeId}/reviews`),
+      ]);
+      setPerfume(detail);
+      setReviews(reviewList.map((r, idx) => ({ ...r, id: r.id ?? `rev-${idx}`, date: (r as any).createdAt })));
+      setUserRating(detail.averageRating ?? detail.ratingAverage ?? 0);
+    } catch (err: any) {
+      setError(err.message || 'No se pudo cargar el perfume');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmitReview = () => {
-    // TODO: send review to backend
-    console.log('Send review', { perfumeId, rating: userRating, comment: userComment });
-    Alert.alert('Guardado', 'Tu opinion se guardo en el estado local (mock).');
+  useEffect(() => {
+    fetchData();
+  }, [perfumeId]);
+
+  const toggleAction = async (key: ActionKey) => {
+    setUserActions((prev) => ({ ...prev, [key]: !prev[key] }));
+    try {
+      await performAction(perfumeId, key as any);
+    } catch (err) {
+      // Swallow error; UI already updated. TODO: surface global toast
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!userRating || !userComment.trim()) {
+      Alert.alert('Falta informacion', 'Agrega rating y comentario antes de guardar.');
+      return;
+    }
+    setSavingReview(true);
+    try {
+      await post(`perfumes/${perfumeId}/reviews`, { userId: USER_ID, rating: userRating, comment: userComment });
+      setUserComment('');
+      await fetchData();
+      Alert.alert('Listo', 'Tu review se envio.');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo enviar la review');
+    } finally {
+      setSavingReview(false);
+    }
   };
 
   const notes = useMemo(() => {
+    const rawNotes = (perfume as any)?.notes;
+    const top = Array.isArray(rawNotes) ? rawNotes : rawNotes?.top ?? [];
+    const heart = Array.isArray(rawNotes) ? [] : rawNotes?.heart ?? [];
+    const base = Array.isArray(rawNotes) ? [] : rawNotes?.base ?? [];
     return [
-      { label: 'Salida', values: perfume?.topNotes ?? [] },
-      { label: 'Corazon', values: perfume?.heartNotes ?? [] },
-      { label: 'Fondo', values: perfume?.baseNotes ?? [] },
+      { label: 'Salida', values: perfume?.topNotes ?? top },
+      { label: 'Corazon', values: perfume?.heartNotes ?? heart },
+      { label: 'Fondo', values: perfume?.baseNotes ?? base },
     ];
   }, [perfume]);
 
-  if (!perfume) {
+  if (loading) {
+    return (
+      <View style={styles.emptyState}>
+        <ActivityIndicator size="large" color="#111827" />
+        <Text style={styles.heading}>Cargando perfume...</Text>
+      </View>
+    );
+  }
+
+  if (error || !perfume) {
     return (
       <View style={styles.emptyState}>
         <Text style={styles.heading}>No se encontro el perfume</Text>
+        {error ? <Text style={styles.meta}>{error}</Text> : null}
       </View>
     );
   }
 
   const openLink = (url: string) => {
-    // In a future version, validate URL and track analytics before opening
     Linking.openURL(url);
   };
+
+  const usageTags = perfume.usage
+    ? perfume.usage
+    : perfume.usageStats
+    ? Object.keys(perfume.usageStats)
+    : [];
+  const buyLinks = perfume.buyLinks ?? (perfume.externalLinks ?? []).map((url, i) => ({ label: `Ver en tienda ${i + 1}`, url }));
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -88,7 +153,7 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
           {perfume.brand} {perfume.concentration ? `- ${perfume.concentration}` : ''}
         </Text>
         <Text style={styles.meta}>
-          {perfume.family} {perfume.launchYear ? `- ${perfume.launchYear}` : ''}
+          {perfume.family} {perfume.launchYear || perfume.year ? `- ${perfume.launchYear ?? perfume.year}` : ''}
         </Text>
       </View>
 
@@ -98,7 +163,7 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
           {notes.map((item) => (
             <View key={item.label} style={styles.notesBlock}>
               <Text style={styles.notesLabel}>{item.label}</Text>
-              <Text style={styles.notesText}>{item.values.join(', ') || 'Sin datos'}</Text>
+              <Text style={styles.notesText}>{Array.isArray(item.values) ? item.values.join(', ') : 'Sin datos'}</Text>
             </View>
           ))}
         </View>
@@ -110,21 +175,23 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>Rating promedio</Text>
             <View style={styles.statValueRow}>
-              <RatingStars value={perfume.ratingAverage ?? 0} />
+              <RatingStars value={perfume.ratingAverage ?? perfume.averageRating ?? 0} />
               <Text style={styles.statText}>({perfume.ratingCount ?? 0})</Text>
             </View>
           </View>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>Duracion</Text>
-            <Text style={styles.statText}>{perfume.longevity ?? 'Sin dato'}</Text>
+            <Text style={styles.statText}>
+              {perfume.longevity ?? (perfume.averageLongevityHours ? `${perfume.averageLongevityHours}h` : 'Sin dato')}
+            </Text>
           </View>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>Intensidad</Text>
-            <Text style={styles.statText}>{perfume.sillage ?? 'Sin dato'}</Text>
+            <Text style={styles.statText}>{perfume.sillage ?? perfume.averageIntensity ?? 'Sin dato'}</Text>
           </View>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>Uso ideal</Text>
-            <UsageTags tags={perfume.usage} />
+            <UsageTags tags={perfume.usage ?? usageTags} />
           </View>
         </View>
       </View>
@@ -155,8 +222,8 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
               );
             })}
           </View>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleSubmitReview}>
-            <Text style={styles.primaryButtonText}>Guardar</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleSubmitReview} disabled={savingReview}>
+            <Text style={styles.primaryButtonText}>{savingReview ? 'Guardando...' : 'Guardar'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -169,7 +236,7 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
               <Text style={styles.reviewName}>{review.userName ?? 'Usuario'}</Text>
               <RatingStars value={review.rating} size={14} />
             </View>
-            <Text style={styles.reviewDate}>{review.date}</Text>
+            <Text style={styles.reviewDate}>{review.date ?? (review as any).createdAt}</Text>
             <Text style={styles.reviewText}>{review.comment}</Text>
           </View>
         ))}
@@ -177,9 +244,9 @@ const PerfumeDetailScreen: React.FC<Props> = ({ route }) => {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Donde se puede comprar</Text>
-        {(perfume.externalLinks ?? []).map((link, index) => (
-          <TouchableOpacity key={link} style={styles.secondaryButton} onPress={() => openLink(link)}>
-            <Text style={styles.secondaryButtonText}>Ver en tienda {index === 0 ? 'A' : 'B'}</Text>
+        {buyLinks.map((link) => (
+          <TouchableOpacity key={link.url} style={styles.secondaryButton} onPress={() => openLink(link.url)}>
+            <Text style={styles.secondaryButtonText}>{link.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -382,6 +449,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
     backgroundColor: '#fff',
+    gap: 8,
   },
 });
 

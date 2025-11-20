@@ -1,3 +1,4 @@
+// DEPRECATED: solo para uso offline; la app usa la API real cuando esta disponible.
 import { Perfume } from '../types/domain';
 
 // Local mock data; replace with backend fetch later.

@@ -4,7 +4,7 @@ export type Perfume = {
   name: string;
   brand: string;
   family: string;
-  notes: string[];
+  notes?: string[] | { top: string[]; heart: string[]; base: string[] };
   launchYear?: number;
   externalLinks?: string[];
   tags?: string[];
@@ -19,6 +19,13 @@ export type Perfume = {
   sillage?: string;
   usage?: string[];
   ratingCount?: number;
+  // Backend fields:
+  year?: number;
+  averageRating?: number;
+  averageLongevityHours?: number;
+  averageIntensity?: 'suave' | 'media' | 'fuerte' | 'bestia';
+  usageStats?: { day: number; night: number; summer: number; winter: number; office: number; date: number };
+  buyLinks?: { label: string; url: string }[];
 };
 
 export type User = {
