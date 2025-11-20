@@ -1,4 +1,4 @@
-﻿// backend/server.ts
+// Entry point: only boots the Express app (no package.json parsing here).
 import http from "http";
 import app from "./src/app";
 

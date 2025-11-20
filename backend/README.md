@@ -10,3 +10,7 @@
 #    |- models        -> tipos de dominio.
 #    |- config        -> configuracion (ports, env vars).
 #    |- utils         -> utilidades transversales (log).
+
+## Ejecutar en desarrollo
+- Instalar deps: `npm install`
+- Levantar modo dev: `npm run dev`
