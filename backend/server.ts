@@ -1,12 +1,11 @@
-﻿// Runtime entrypoint; builds and boots the Express HTTP server.
-import http from 'http';
-import app from './src/app';
-import { getConfig } from './src/config/env';
-import { logger } from './src/utils/logger';
+﻿// backend/server.ts
+import http from "http";
+import app from "./src/app";
 
-const { port } = getConfig();
+const PORT = process.env.PORT || 3001;
+
 const server = http.createServer(app);
 
-server.listen(port, () => {
-  logger.info(`API escuchando en puerto ${port}`);
+server.listen(PORT, () => {
+  console.log(`Backend API escuchando en http://localhost:${PORT}`);
 });
